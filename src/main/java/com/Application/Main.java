@@ -1,10 +1,10 @@
 package com.Application;
 
 import com.sun.jna.Native;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.win32.StdCallLibrary;
+import com.sun.jna.platform.WindowUtils;
+import com.sun.jna.win32.W32APIOptions;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
@@ -18,6 +18,7 @@ import static java.lang.Thread.sleep;
 
 public class Main {
     static String CsTitle = "Counter-Strike: Global Offensive - Direct3D 9";
+    //static String CsTitle = "Bit Heroes";
     // Colors to the console
     public static final String ANSI_RESET = "\u001B[0m";
     static final String ANSI_YELLOW = "\u001B[33m";
@@ -55,40 +56,72 @@ public class Main {
                 if (line.contains("SDR server steamid:") && line.contains("vport") && line.contains("] connected")) {
                     System.out.println("A MATCH HAS BEEN FOUNDED");
 
-                    //The program have to check what is the window in foreground. 05/09/23 {
+                    //The program have to check what is the window in foreground.
 
-                    //String windowBefore = User32.INSTANCE.FindWindow(null, );
+                    WinDef.HWND windowBefore = User32.INSTANCE.GetForegroundWindow();
+
+                    System.out.println("Tela anterior: "+windowBefore);
 
                     //When the match is found, we have to check the coordinates and the size of the window.
 
-
-                    Rectangle window = new Rectangle(getWindowLocationAndSize(hWnd));
+                    Rectangle window = WindowUtils.getWindowLocationAndSize(hWnd);
                     int X = window.x;
                     int Y = window.y;
                     int heigth = window.height;
                     int width = window.width;
 
-                    if(X <= 0 || Y<=0){ //Estava retornando -32000 em X e Y quando eu rodava e a janela
-                        X = 0;          //se encontrava proxima ao canto.
+                    if(X <= 0){             //Estava retornando -32000 em X e Y quando a janela
+                        X = 0;              //se encontrava proxima ao canto.
+                    } else if ( Y <= 0 ){
                         Y = 0;
                     }
+                    System.out.println("Window X: "+X+", Y: "+Y+", Heigth: "+heigth+", Width: "+width);
+
+                    //if(hWnd != windowBefore){
+                        User32Extended.INSTANCE.SetForegroundWindow(hWnd);
+                        User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_RESTORE);
+                        System.out.println("Setado: "+hWnd);
+                            {Thread.sleep(500);}
+                    /*} else {
+                        System.out.println("Não setado: "+hWnd);
+                    }*/
 
                     //So now, the robot can make actions to accept the match.
-                    //setFocusToWindowsApp(CsTitle, 0);
-                        {sleep(200);}
-                    robot.mouseMove(X+(width/2), Y+(heigth/2));
-                        {sleep(200);}
+
+                        {Thread.sleep(500);}
+                    robot.mouseMove(X+(width/2), Y+(9*(heigth/20)));
+                    System.out.println("moved");
+                        {Thread.sleep(200);}
                     robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                        {sleep(200);}
+                    System.out.println("pressed");
+                        {Thread.sleep(200);}
                     robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                        {sleep(200);}
+                    System.out.println("released");
+                        {Thread.sleep(500);}
 
                     //Back to the window the user were before.
+/*
+                    //ALT Pressing
+                    WinDef.HWND htopnd = User32.INSTANCE.FindWindowA(null, null);
+                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
+                            WinDef.WPARAM(User32.VK_MENU), new WinDef.LPARAM(0));
+                    System.out.println("ok + alt");
 
+                    //TAB Pressing
+                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
+                            WinDef.WPARAM(User32.VK_TAB), new WinDef.LPARAM(0));
+                    System.out.println("ok + tab");
 
+                    //ALT Releasing
+                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
+                            WinDef.WPARAM(User32.VK_MENU), new WinDef.LPARAM(0));
+                    System.out.println("ok - alt");
 
-
-                    // }05/09/23
+                    //TAB Releasing
+                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
+                            WinDef.WPARAM(User32.VK_TAB), new WinDef.LPARAM(0));
+                    System.out.println("ok - tab");
+ */
                 }
             }
 
@@ -103,24 +136,31 @@ public class Main {
         }
     }
 
-    public static Rectangle getWindowLocationAndSize(final WinDef.HWND hwnd) {
-        final WinDef.RECT lpRect = new WinDef.RECT();
-        if (!User32.INSTANCE.GetWindowRect(hwnd, lpRect))
-            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-        return new Rectangle(lpRect.left, lpRect.top, Math.abs(lpRect.right
-                - lpRect.left), Math.abs(lpRect.bottom - lpRect.top));
-    }
-
-    // }05/09/23
-
     public interface User32 extends StdCallLibrary{
         User32 INSTANCE = Native.loadLibrary("user32", User32.class);
 
-
         WinDef.HWND FindWindowA(String lpClass, String lpWindowName);
 
-
         boolean GetWindowRect(WinDef.HWND hwnd, WinDef.RECT lpRect);
+
+        WinDef.HWND GetForegroundWindow();
+        int SW_SHOWNORMAL = 1;
+        int SW_SHOWMINIMIZED = 2;
+        int SW_SHOWMAXIMIZED = 3;
+        int SW_SHOW = 5;
+        int SW_RESTORE = 9;
+
+        WinDef.LRESULT SendMessage(WinDef.HWND hwnd, int Msg, WinDef.WPARAM wParam, WinDef.LPARAM lParam);
+        int WM_KEYDOWN = 0x0100;
+        int VK_MENU = 0x12; //Alt
+        int VK_TAB = 0x09; //Tab
+    }
+    
+    public interface User32Extended extends User32{
+        User32Extended INSTANCE = Native.load("user32", User32Extended.class, W32APIOptions.DEFAULT_OPTIONS);
+
+        boolean SetForegroundWindow(WinDef.HWND hWnd);
+        boolean ShowWindow(WinDef.HWND hWnd, int nCmdShow);
     }
 
 }
