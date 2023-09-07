@@ -1,19 +1,18 @@
 package com.Application;
 
 import com.sun.jna.Native;
+import com.sun.jna.platform.WindowUtils;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.win32.StdCallLibrary;
-import com.sun.jna.platform.WindowUtils;
 import com.sun.jna.win32.W32APIOptions;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
-
-import static java.lang.Thread.sleep;
 
 
 public class Main {
@@ -56,6 +55,13 @@ public class Main {
                 if (line.contains("SDR server steamid:") && line.contains("vport") && line.contains("] connected")) {
                     System.out.println("A MATCH HAS BEEN FOUNDED");
 
+                    //Taking the screen size
+
+                    Toolkit tk = Toolkit.getDefaultToolkit();
+                    Dimension screenSize = tk.getScreenSize();
+
+                    System.out.println("Height: "+screenSize.height+", Width: "+screenSize.width);
+
                     //The program have to check what is the window in foreground.
 
                     WinDef.HWND windowBefore = User32.INSTANCE.GetForegroundWindow();
@@ -67,64 +73,109 @@ public class Main {
                     Rectangle window = WindowUtils.getWindowLocationAndSize(hWnd);
                     int X = window.x;
                     int Y = window.y;
-                    int heigth = window.height;
+                    int height = window.height;
                     int width = window.width;
 
                     if(X <= 0){             //Estava retornando -32000 em X e Y quando a janela
                         X = 0;              //se encontrava proxima ao canto.
-                    } else if ( Y <= 0 ){
+                    }
+                    if ( Y <= 0 ){
                         Y = 0;
                     }
-                    System.out.println("Window X: "+X+", Y: "+Y+", Heigth: "+heigth+", Width: "+width);
 
-                    //if(hWnd != windowBefore){
-                        User32Extended.INSTANCE.SetForegroundWindow(hWnd);
-                        User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_RESTORE);
-                        System.out.println("Setado: "+hWnd);
-                            {Thread.sleep(500);}
-                    /*} else {
-                        System.out.println("Não setado: "+hWnd);
-                    }*/
+                    int mousePosX = X+(screenSize.width/2);
+                    int mousePosY = Y+(9*(screenSize.height/20));
+
+/*
+                    WinDef.RECT acceptRect = new WinDef.RECT();
+                    acceptRect.top = mousePosY;
+                    acceptRect.bottom = 50;
+                    acceptRect.left = mousePosX;
+                    acceptRect.right = 50;
+
+                    WinDef.RECT windowRect = new WinDef.RECT();
+                    windowRect.top = 0;
+                    windowRect.bottom = screenSize.height;
+                    windowRect.left = 0;
+                    windowRect.right = screenSize.width;
+*/
+
+                    System.out.println("Window X: "+X+", Y: "+Y+", Heigth: "+height+", Width: "+width);
 
                     //So now, the robot can make actions to accept the match.
+                    //The program needs to check if it's fullscreen or not to do the right
+                    //sequence of actions.
+                    //To check if it's window or fullscreen:
 
-                        {Thread.sleep(500);}
-                    robot.mouseMove(X+(width/2), Y+(9*(heigth/20)));
-                    System.out.println("moved");
-                        {Thread.sleep(200);}
-                    robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                    System.out.println("pressed");
-                        {Thread.sleep(200);}
-                    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                    System.out.println("released");
-                        {Thread.sleep(500);}
+                    if(hWnd != windowBefore){
+                        User32Extended.INSTANCE.ShowWindow(windowBefore, User32.SW_SHOWMINIMIZED);
+                        User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_RESTORE);
+                        User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_SHOW);
+                        User32Extended.INSTANCE.SetForegroundWindow(hWnd);
+                        System.out.println("Setado: "+hWnd);
 
-                    //Back to the window the user were before.
-/*
-                    //ALT Pressing
-                    WinDef.HWND htopnd = User32.INSTANCE.FindWindowA(null, null);
-                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
-                            WinDef.WPARAM(User32.VK_MENU), new WinDef.LPARAM(0));
-                    System.out.println("ok + alt");
+                        robot.delay(600);
+                        if(height<=200 && width<=200){
+                            robot.mouseMove(mousePosX, mousePosY);
+                            //User32.INSTANCE.ClipCursor(acceptRect);
+                            System.out.println("moved to: X = "+mousePosX+", Y = "+mousePosY);
+                            System.out.println("X = "+screenSize.width+", Y = "+screenSize.height);
+                            robot.delay(1000);
+                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("pressed");
+                            robot.delay(100);
+                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("released");
+                            robot.delay(100);
+                            //User32.INSTANCE.ClipCursor(windowRect);
+                        } else {
+                            robot.mouseMove(X+(width/2), Y+(9*(height/20)));
+                            //User32.INSTANCE.ClipCursor(acceptRect);
+                            System.out.println("moved to: X = "+X+(width/2)+", Y = "+Y+(9*(height/20)));
+                            robot.delay(1200);
+                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("pressed");
+                            robot.delay(100);
+                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("released");
+                            robot.delay(100);
+                            //User32.INSTANCE.ClipCursor(windowRect);
+                        }
+                        //Back to the window the user were before.
+                        alt_tab();
+                    } else {
+                        System.out.println("Não setado: "+windowBefore);
 
-                    //TAB Pressing
-                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
-                            WinDef.WPARAM(User32.VK_TAB), new WinDef.LPARAM(0));
-                    System.out.println("ok + tab");
-
-                    //ALT Releasing
-                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
-                            WinDef.WPARAM(User32.VK_MENU), new WinDef.LPARAM(0));
-                    System.out.println("ok - alt");
-
-                    //TAB Releasing
-                    User32.INSTANCE.SendMessage(htopnd, User32.WM_KEYDOWN, new
-                            WinDef.WPARAM(User32.VK_TAB), new WinDef.LPARAM(0));
-                    System.out.println("ok - tab");
- */
+                        robot.delay(600);
+                        if(height<=200 && width<=200){
+                            robot.mouseMove(mousePosX, mousePosY);
+                            //User32.INSTANCE.ClipCursor(acceptRect);
+                            System.out.println("moved to: X = "+mousePosX+", Y = "+mousePosY);
+                            System.out.println("X = "+screenSize.width+", Y = "+screenSize.height);
+                            robot.delay(1000);
+                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("pressed");
+                            robot.delay(100);
+                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("released");
+                            robot.delay(100);
+                            //User32.INSTANCE.ClipCursor(windowRect);
+                        } else {
+                            robot.mouseMove(X+(width/2), Y+(9*(height/20)));
+                            //User32.INSTANCE.ClipCursor(acceptRect);
+                            System.out.println("moved to: X = "+X+(width/2)+", Y = "+Y+(9*(height/20)));
+                            robot.delay(1200);
+                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("pressed");
+                            robot.delay(100);
+                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+                            System.out.println("released");
+                            robot.delay(100);
+                            //User32.INSTANCE.ClipCursor(windowRect);
+                        }
+                    }
                 }
             }
-
             // close socket on not have lines to read
             socket.close();
         } catch (Exception e) {
@@ -135,7 +186,22 @@ public class Main {
             throw e;
         }
     }
+    public static void alt_tab() {
+        Robot robot;
 
+        try {
+            robot = new Robot();
+            robot.delay(800);
+            robot.keyPress(KeyEvent.VK_ALT);
+            robot.keyPress(KeyEvent.VK_TAB);
+            robot.keyRelease(KeyEvent.VK_TAB);
+            robot.delay(500);
+            robot.keyRelease(KeyEvent.VK_ALT);
+        } catch (AWTException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
     public interface User32 extends StdCallLibrary{
         User32 INSTANCE = Native.loadLibrary("user32", User32.class);
 
@@ -144,16 +210,10 @@ public class Main {
         boolean GetWindowRect(WinDef.HWND hwnd, WinDef.RECT lpRect);
 
         WinDef.HWND GetForegroundWindow();
-        int SW_SHOWNORMAL = 1;
         int SW_SHOWMINIMIZED = 2;
-        int SW_SHOWMAXIMIZED = 3;
         int SW_SHOW = 5;
         int SW_RESTORE = 9;
-
-        WinDef.LRESULT SendMessage(WinDef.HWND hwnd, int Msg, WinDef.WPARAM wParam, WinDef.LPARAM lParam);
-        int WM_KEYDOWN = 0x0100;
-        int VK_MENU = 0x12; //Alt
-        int VK_TAB = 0x09; //Tab
+        boolean ClipCursor(WinDef.RECT lpRect);
     }
     
     public interface User32Extended extends User32{
