@@ -17,17 +17,12 @@ import java.net.Socket;
 
 public class Main {
     static String CsTitle = "Counter-Strike: Global Offensive - Direct3D 9";
-    //static String CsTitle = "Bit Heroes";
     // Colors to the console
     public static final String ANSI_RESET = "\u001B[0m";
     static final String ANSI_YELLOW = "\u001B[33m";
 
-    public static void main(String[] args) throws IOException, AWTException, InterruptedException {
+    public static void main(String[] args) throws IOException, AWTException{
         boolean checker;
-
-        //setFocusToWindowsApp(CsTitle, 0);
-
-        Robot robot = new Robot();
 
         WinDef.HWND hWnd = User32.INSTANCE.FindWindowA(null, CsTitle);
         if(hWnd == null){
@@ -56,20 +51,14 @@ public class Main {
                     System.out.println("A MATCH HAS BEEN FOUNDED");
 
                     //Taking the screen size
-
                     Toolkit tk = Toolkit.getDefaultToolkit();
                     Dimension screenSize = tk.getScreenSize();
 
-                    System.out.println("Height: "+screenSize.height+", Width: "+screenSize.width);
-
                     //The program have to check what is the window in foreground.
-
                     WinDef.HWND windowBefore = User32.INSTANCE.GetForegroundWindow();
-
                     System.out.println("Tela anterior: "+windowBefore);
 
                     //When the match is found, we have to check the coordinates and the size of the window.
-
                     Rectangle window = WindowUtils.getWindowLocationAndSize(hWnd);
                     int X = window.x;
                     int Y = window.y;
@@ -82,9 +71,6 @@ public class Main {
                     if ( Y <= 0 ){
                         Y = 0;
                     }
-
-                    int mousePosX = X+(screenSize.width/2);
-                    int mousePosY = Y+(9*(screenSize.height/20));
 
 /*
                     WinDef.RECT acceptRect = new WinDef.RECT();
@@ -100,78 +86,33 @@ public class Main {
                     windowRect.right = screenSize.width;
 */
 
-                    System.out.println("Window X: "+X+", Y: "+Y+", Heigth: "+height+", Width: "+width);
-
                     //So now, the robot can make actions to accept the match.
                     //The program needs to check if it's fullscreen or not to do the right
                     //sequence of actions.
                     //To check if it's window or fullscreen:
+                    if(hWnd != windowBefore){    //If statement not working.
 
-                    if(hWnd != windowBefore){
                         User32Extended.INSTANCE.ShowWindow(windowBefore, User32.SW_SHOWMINIMIZED);
                         User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_RESTORE);
                         User32Extended.INSTANCE.ShowWindow(hWnd, User32.SW_SHOW);
                         User32Extended.INSTANCE.SetForegroundWindow(hWnd);
+
                         System.out.println("Setado: "+hWnd);
 
-                        robot.delay(600);
                         if(height<=200 && width<=200){
-                            robot.mouseMove(mousePosX, mousePosY);
-                            //User32.INSTANCE.ClipCursor(acceptRect);
-                            System.out.println("moved to: X = "+mousePosX+", Y = "+mousePosY);
-                            System.out.println("X = "+screenSize.width+", Y = "+screenSize.height);
-                            robot.delay(1000);
-                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("pressed");
-                            robot.delay(100);
-                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("released");
-                            robot.delay(100);
-                            //User32.INSTANCE.ClipCursor(windowRect);
+                            robotActs(X, Y, screenSize.width, screenSize.height);
                         } else {
-                            robot.mouseMove(X+(width/2), Y+(9*(height/20)));
-                            //User32.INSTANCE.ClipCursor(acceptRect);
-                            System.out.println("moved to: X = "+X+(width/2)+", Y = "+Y+(9*(height/20)));
-                            robot.delay(1200);
-                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("pressed");
-                            robot.delay(100);
-                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("released");
-                            robot.delay(100);
-                            //User32.INSTANCE.ClipCursor(windowRect);
+                            robotActs(X, Y, width, height);
                         }
                         //Back to the window the user were before.
                         alt_tab();
                     } else {
                         System.out.println("Não setado: "+windowBefore);
 
-                        robot.delay(600);
                         if(height<=200 && width<=200){
-                            robot.mouseMove(mousePosX, mousePosY);
-                            //User32.INSTANCE.ClipCursor(acceptRect);
-                            System.out.println("moved to: X = "+mousePosX+", Y = "+mousePosY);
-                            System.out.println("X = "+screenSize.width+", Y = "+screenSize.height);
-                            robot.delay(1000);
-                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("pressed");
-                            robot.delay(100);
-                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("released");
-                            robot.delay(100);
-                            //User32.INSTANCE.ClipCursor(windowRect);
+                            robotActs(X, Y, screenSize.width, screenSize.height);
                         } else {
-                            robot.mouseMove(X+(width/2), Y+(9*(height/20)));
-                            //User32.INSTANCE.ClipCursor(acceptRect);
-                            System.out.println("moved to: X = "+X+(width/2)+", Y = "+Y+(9*(height/20)));
-                            robot.delay(1200);
-                            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("pressed");
-                            robot.delay(100);
-                            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-                            System.out.println("released");
-                            robot.delay(100);
-                            //User32.INSTANCE.ClipCursor(windowRect);
+                            robotActs(X, Y, width, height);
                         }
                     }
                 }
@@ -186,9 +127,9 @@ public class Main {
             throw e;
         }
     }
+
     public static void alt_tab() {
         Robot robot;
-
         try {
             robot = new Robot();
             robot.delay(800);
@@ -202,25 +143,42 @@ public class Main {
             e.printStackTrace();
         }
     }
+
+    public static void robotActs(int paramX, int paramY, int width, int height) throws AWTException {
+        Robot robot = new Robot();
+
+        int calcX = paramX+(width/2);
+        int calcY = paramY+(9*(height/20));
+
+        robot.delay(600);
+        robot.mouseMove(calcX, calcY);
+        //User32.INSTANCE.ClipCursor(acceptRect);
+        System.out.println("moved to: X = "+calcX+", Y = "+calcY);
+        System.out.println("X = "+paramX+", Y = "+paramY);
+        robot.delay(1000);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        System.out.println("pressed");
+        robot.delay(100);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        System.out.println("released");
+        robot.delay(100);
+        //User32.INSTANCE.ClipCursor(windowRect);
+    }
+
     public interface User32 extends StdCallLibrary{
         User32 INSTANCE = Native.loadLibrary("user32", User32.class);
-
         WinDef.HWND FindWindowA(String lpClass, String lpWindowName);
-
         boolean GetWindowRect(WinDef.HWND hwnd, WinDef.RECT lpRect);
-
         WinDef.HWND GetForegroundWindow();
+        boolean ClipCursor(WinDef.RECT lpRect);
         int SW_SHOWMINIMIZED = 2;
         int SW_SHOW = 5;
         int SW_RESTORE = 9;
-        boolean ClipCursor(WinDef.RECT lpRect);
     }
     
     public interface User32Extended extends User32{
         User32Extended INSTANCE = Native.load("user32", User32Extended.class, W32APIOptions.DEFAULT_OPTIONS);
-
         boolean SetForegroundWindow(WinDef.HWND hWnd);
         boolean ShowWindow(WinDef.HWND hWnd, int nCmdShow);
     }
-
 }
