@@ -1,4 +1,4 @@
-package com.Application;
+package com.Applications;
 
 import com.sun.jna.Native;
 import com.sun.jna.platform.WindowUtils;
@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 
 
-public class Main {
+public class MainCsAccept {
     static String CsTitle = "Counter-Strike: Global Offensive - Direct3D 9";
     // Colors to the console
     public static final String ANSI_RESET = "\u001B[0m";
