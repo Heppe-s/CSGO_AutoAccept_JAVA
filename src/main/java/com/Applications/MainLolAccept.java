@@ -54,7 +54,8 @@ public class MainLolAccept {
                         con.setSSLSocketFactory(SocketFactory);
                         con.setRequestMethod("POST");
                         con.setRequestProperty("Authorization", Token);
-                        con.connect();
+                        int code = con.getResponseCode();
+                        System.out.println(code);
                     } catch (URISyntaxException | IOException e) {
                         throw new RuntimeException(e);
                     }
